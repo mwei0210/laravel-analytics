@@ -33,6 +33,32 @@ class AnalyticsClientFactory
         return $client;
     }
 
+    public static function createForCode($analyticsCode): AnalyticsClient
+    {
+        $authenticatedClient = self::createAuthenticatedGoogleClientOauth($analyticsCode);
+
+        $googleService = new Google_Service_Analytics($authenticatedClient);
+
+        return self::createAnalyticsClient($analyticsConfig, $googleService);
+    }
+
+    public static function createAuthenticatedGoogleClientOauth($analyticsCode): Google_Client
+    {
+        $client = new Google_Client();
+
+        $client->setScopes([
+            Google_Service_Analytics::ANALYTICS_READONLY,
+        ]);
+
+        $client->authenticate($analyticsCode);
+
+        $client->setAccessToken($access_token);
+
+        self::configureCache($client, $config['cache']);
+
+        return $client;
+    }
+
     protected static function configureCache(Google_Client $client, $config)
     {
         $config = collect($config);

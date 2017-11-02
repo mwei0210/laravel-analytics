@@ -28,6 +28,15 @@ Spatie is a webdesign agency in Antwerp, Belgium. You'll find an overview of all
 
 > **If you're using v1 of this package, please refer to [an older version of this readme](https://github.com/spatie/laravel-analytics/blob/88eb75beadcd8dade2f3ee2423f3716253b2104d/README.md) for the installation and usage guide.**
 
+## Modified based on spatie/laravel-analytics
+
+This package id modified based on the original packag to provide google Oauth authorization to allow analytic on multiple accounts. There is no need to add service provider and facade in config/app as client is initiated manually as followed:
+
+```php
+$analyticsClient = AnalyticsClientFactory::createForToken(config('analytics'), $access_token);
+$analytics       = new Analytics($analyticsClient, $analyticProfileId);
+```
+
 ## Installation
 
 This package can be installed through Composer.

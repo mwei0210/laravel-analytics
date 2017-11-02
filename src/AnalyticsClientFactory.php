@@ -33,16 +33,16 @@ class AnalyticsClientFactory
         return $client;
     }
 
-    public static function createForCode($analyticsCode): AnalyticsClient
+    public static function createForToken(array $analyticsConfig, $access_token): AnalyticsClient
     {
-        $authenticatedClient = self::createAuthenticatedGoogleClientOauth($analyticsCode);
+        $authenticatedClient = self::createAuthenticatedGoogleClientOauth($analyticsConfig, $access_token);
 
         $googleService = new Google_Service_Analytics($authenticatedClient);
 
         return self::createAnalyticsClient($analyticsConfig, $googleService);
     }
 
-    public static function createAuthenticatedGoogleClientOauth($analyticsCode): Google_Client
+    public static function createAuthenticatedGoogleClientOauth(array $config, $access_token): Google_Client
     {
         $client = new Google_Client();
 
@@ -50,11 +50,9 @@ class AnalyticsClientFactory
             Google_Service_Analytics::ANALYTICS_READONLY,
         ]);
 
-        $client->authenticate($analyticsCode);
-
         $client->setAccessToken($access_token);
 
-        self::configureCache($client, $config['cache']);
+        self::configureCacheMultiClient($client, $config['cache']);
 
         return $client;
     }
@@ -71,6 +69,25 @@ class AnalyticsClientFactory
 
         $client->setCacheConfig(
             $config->except('store')->toArray()
+        );
+    }
+
+    protected static function configureCacheMultiClient(Google_Client $client, $config)
+    {
+        $config = collect($config);
+
+        $store = \Cache::store($config->get('store'));
+
+        $cache = new CacheItemPool($store);
+
+        $client->setCache($cache);
+
+        $cacheConfigNoStore = $config->except('store')->toArray();
+
+        $cacheConfigNoStore['prefix'] = isset($cacheConfigNoStore['prefix'])?$cacheConfigNoStore['prefix']:'' . $client->getAccessToken()['access_token'];
+
+        $client->setCacheConfig(
+            $cacheConfigNoStore
         );
     }
 

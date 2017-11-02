@@ -42,6 +42,7 @@ class Analytics
 
     public function fetchVisitorsAndPageViews(Period $period): Collection
     {
+        $period->endDate->addDay();
         $response = $this->performQuery(
             $period,
             'ga:users,ga:pageviews',

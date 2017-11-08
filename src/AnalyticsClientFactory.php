@@ -4,6 +4,7 @@ namespace Spatie\Analytics;
 
 use Google_Client;
 use Google_Service_Analytics;
+use Google_Service_AnalyticsReporting;
 use Illuminate\Contracts\Cache\Repository;
 use Madewithlove\IlluminatePsrCacheBridge\Laravel\CacheItemPool;
 
@@ -37,7 +38,8 @@ class AnalyticsClientFactory
     {
         $authenticatedClient = self::createAuthenticatedGoogleClientOauth($analyticsConfig, $access_token);
 
-        $googleService = new Google_Service_Analytics($authenticatedClient);
+        //$googleService = new Google_Service_Analytics($authenticatedClient);
+        $googleService = new Google_Service_AnalyticsReporting($authenticatedClient);
 
         return self::createAnalyticsClient($analyticsConfig, $googleService);
     }
@@ -91,7 +93,7 @@ class AnalyticsClientFactory
         );
     }
 
-    protected static function createAnalyticsClient(array $analyticsConfig, Google_Service_Analytics $googleService): AnalyticsClient
+    protected static function createAnalyticsClient(array $analyticsConfig, Google_Service_AnalyticsReporting $googleService): AnalyticsClient
     {
         $client = new AnalyticsClient($googleService, app(Repository::class));
 

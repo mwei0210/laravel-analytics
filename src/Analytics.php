@@ -45,11 +45,11 @@ class Analytics
         $period->endDate->addDay();
         $response = $this->performQuery(
             $period,
-            'ga:users,ga:pageviews',
-            ['dimensions' => 'ga:date,ga:pageTitle']
+            ['users','pageviews'],
+            ['date','pageTitle']
         );
 
-        return collect($response['rows'] ?? [])->map(function (array $dateRow) {
+        return collect($response ?? [])->map(function (array $dateRow) {
             return [
                 'date' => Carbon::createFromFormat('Ymd', $dateRow[0]),
                 'pageTitle' => $dateRow[1],
@@ -63,11 +63,11 @@ class Analytics
     {
         $response = $this->performQuery(
             $period,
-            'ga:users,ga:pageviews',
-            ['dimensions' => 'ga:date']
+            ['users','pageviews'],
+            ['date']
         );
 
-        return collect($response['rows'] ?? [])->map(function (array $dateRow) {
+        return collect($response ?? [])->map(function (array $dateRow) {
             return [
                 'date' => Carbon::createFromFormat('Ymd', $dateRow[0]),
                 'visitors' => (int) $dateRow[1],
@@ -80,15 +80,13 @@ class Analytics
     {
         $response = $this->performQuery(
             $period,
-            'ga:pageviews',
-            [
-                'dimensions' => 'ga:pagePath,ga:pageTitle',
-                'sort' => '-ga:pageviews',
-                'max-results' => $maxResults,
-            ]
+            ['pageviews'],
+            ['pagePath','pageTitle'],
+            'pageviews',
+            $maxResults
         );
 
-        return collect($response['rows'] ?? [])
+        return collect($response ?? [])
             ->map(function (array $pageRow) {
                 return [
                     'url' => $pageRow[0],
@@ -101,15 +99,13 @@ class Analytics
     public function fetchTopReferrers(Period $period, int $maxResults = 20): Collection
     {
         $response = $this->performQuery($period,
-            'ga:pageviews',
-            [
-                'dimensions' => 'ga:fullReferrer',
-                'sort' => '-ga:pageviews',
-                'max-results' => $maxResults,
-            ]
+            ['pageviews'],
+            ['fullReferrer'],
+            'pageviews',
+            $maxResults
         );
 
-        return collect($response['rows'] ?? [])->map(function (array $pageRow) {
+        return collect($response ?? [])->map(function (array $pageRow) {
             return [
                 'url' => $pageRow[0],
                 'pageViews' => (int) $pageRow[1],
@@ -121,14 +117,12 @@ class Analytics
     {
         $response = $this->performQuery(
             $period,
-            'ga:sessions',
-            [
-                'dimensions' => 'ga:browser',
-                'sort' => '-ga:sessions',
-            ]
+            ['sessions'],
+            ['browser'],
+            'sessions'
         );
 
-        $topBrowsers = collect($response['rows'] ?? [])->map(function (array $browserRow) {
+        $topBrowsers = collect($response ?? [])->map(function (array $browserRow) {
             return [
                 'browser' => $browserRow[0],
                 'sessions' => (int) $browserRow[1],
@@ -161,15 +155,62 @@ class Analytics
      *
      * @return array|null
      */
-    public function performQuery(Period $period, string $metrics, array $others = [])
+    public function performQuery(Period $period, array $metrics, array $dimensions = [], string $sortByField = null, int $maxResults = 20, array $others = [])
     {
         return $this->client->performQuery(
             $this->viewId,
             $period->startDate,
             $period->endDate,
             $metrics,
+            $dimensions,
+            $sortByField,
+            $maxResults,
             $others
         );
+    }
+
+    public function fetchDemographics(Period $period, int $maxResults = 10): Collection
+    {
+        $response = $this->performQuery(
+            $period,
+            [
+            ],
+            [
+                'userAgeBracket',
+                'userGender',
+            ]
+        );
+
+        return collect($response ?? [])->map(function (array $demoRow) {
+            return [
+                'userAgeBracket' => $demoRow[0],
+                'userGender' => $demoRow[1],
+            ];
+        });
+
+    }
+
+    public function fetchGeo(Period $period, int $maxResults = 10): Collection
+    {
+        $response = $this->performQuery(
+            $period,
+            [
+            ],
+            [
+                'language',
+                'city',
+                'country'
+            ]
+        );
+
+        return collect($response ?? [])->map(function (array $geoRow) {
+            return [
+                'language' => $geoRow[0],
+                'city' => $geoRow[1],
+                'country' => $geoRow[2],
+            ];
+        });
+
     }
 
     /*

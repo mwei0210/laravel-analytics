@@ -40,18 +40,20 @@ class Analytics
         return $this;
     }
 
-    public function fetchVisitorsAndPageViews(Period $period): Collection
+    public function fetchVisitorsAndPageViews(Period $period, int $maxResults = null): Collection
     {
-        $period->endDate->addDay();
+        //$period->endDate->addDay();
         $response = $this->performQuery(
             $period,
             ['users','pageviews'],
-            ['date','pageTitle']
+            ['date','pageTitle'],
+            'pageviews',
+            $maxResults
         );
 
         return collect($response ?? [])->map(function (array $dateRow) {
             return [
-                'date' => Carbon::createFromFormat('Ymd', $dateRow[0]),
+                'date' => Carbon::createFromFormat('Ymd', $dateRow[0])->format('D, M j, Y'),
                 'pageTitle' => $dateRow[1],
                 'visitors' => (int) $dateRow[2],
                 'pageViews' => (int) $dateRow[3],
@@ -59,24 +61,26 @@ class Analytics
         });
     }
 
-    public function fetchTotalVisitorsAndPageViews(Period $period): Collection
+    public function fetchTotalVisitorsAndPageViews(Period $period, int $maxResults = null): Collection
     {
         $response = $this->performQuery(
             $period,
             ['users','pageviews'],
-            ['date']
+            ['date'],
+            'pageviews',
+            $maxResults
         );
 
         return collect($response ?? [])->map(function (array $dateRow) {
             return [
-                'date' => Carbon::createFromFormat('Ymd', $dateRow[0]),
+                'date' => Carbon::createFromFormat('Ymd', $dateRow[0])->format('D, M j, Y'),
                 'visitors' => (int) $dateRow[1],
                 'pageViews' => (int) $dateRow[2],
             ];
         });
     }
 
-    public function fetchMostVisitedPages(Period $period, int $maxResults = 20): Collection
+    public function fetchMostVisitedPages(Period $period, int $maxResults = null): Collection
     {
         $response = $this->performQuery(
             $period,
@@ -96,7 +100,7 @@ class Analytics
             });
     }
 
-    public function fetchTopReferrers(Period $period, int $maxResults = 20): Collection
+    public function fetchTopReferrers(Period $period, int $maxResults = null): Collection
     {
         $response = $this->performQuery($period,
             ['pageviews'],
@@ -155,7 +159,7 @@ class Analytics
      *
      * @return array|null
      */
-    public function performQuery(Period $period, array $metrics, array $dimensions = [], string $sortByField = null, int $maxResults = 20, array $others = [])
+    public function performQuery(Period $period, array $metrics, array $dimensions = [], string $sortByField = null, int $maxResults = null, array $others = [])
     {
         return $this->client->performQuery(
             $this->viewId,
@@ -169,11 +173,12 @@ class Analytics
         );
     }
 
-    public function fetchDemographics(Period $period, int $maxResults = 10): Collection
+    public function fetchDemographics(Period $period, int $maxResults = null): Collection
     {
         $response = $this->performQuery(
             $period,
             [
+                'users'
             ],
             [
                 'userAgeBracket',
@@ -185,22 +190,26 @@ class Analytics
             return [
                 'userAgeBracket' => $demoRow[0],
                 'userGender' => $demoRow[1],
+                'visitors' => $demoRow[2]
             ];
         });
 
     }
 
-    public function fetchGeo(Period $period, int $maxResults = 10): Collection
+    public function fetchGeo(Period $period, int $maxResults = null): Collection
     {
         $response = $this->performQuery(
             $period,
             [
+                'users'
             ],
             [
                 'language',
                 'city',
                 'country'
-            ]
+            ],
+            'users',
+            $maxResults
         );
 
         return collect($response ?? [])->map(function (array $geoRow) {
@@ -208,6 +217,96 @@ class Analytics
                 'language' => $geoRow[0],
                 'city' => $geoRow[1],
                 'country' => $geoRow[2],
+                'visitors' => $geoRow[3]
+            ];
+        });
+
+    }
+
+    public function fetchTrafficSummary(Period $period): Collection
+    {
+        $response = $this->performQuery(
+            $period,
+            ['users','pageviews','sessions','bounceRate'],
+            ['date']
+        );
+
+        return collect($response ?? [])->map(function (array $dateRow) {
+            return [
+                'date' => Carbon::createFromFormat('Ymd', $dateRow[0])->format('j M'),
+                'visitors' => (int) $dateRow[1],
+                'pageViews' => (int) $dateRow[2],
+                'sessions' => $dateRow[3],
+                'bounceRate' => $dateRow[4],
+            ];
+        });
+    }
+
+    public function fetchLanguages(Period $period, int $maxResults = null): Collection
+    {
+        $response = $this->performQuery(
+            $period,
+            [
+                'users'
+            ],
+            [
+                'language'
+            ],
+            'users',
+            $maxResults
+        );
+
+        return collect($response ?? [])->map(function (array $geoRow) {
+            return [
+                'language' => $geoRow[0],
+                'visitors' => $geoRow[1]
+            ];
+        });
+
+    }
+
+    public function fetchCities(Period $period, int $maxResults = null): Collection
+    {
+        $response = $this->performQuery(
+            $period,
+            [
+                'users'
+            ],
+            [
+                'city',
+                'country'
+            ],
+            'users',
+            $maxResults
+        );
+
+        return collect($response ?? [])->map(function (array $geoRow) {
+            return [
+                'city' => $geoRow[0].', '.$geoRow[1],
+                'visitors' => $geoRow[2]
+            ];
+        });
+
+    }
+
+    public function fetchCountries(Period $period, int $maxResults = null): Collection
+    {
+        $response = $this->performQuery(
+            $period,
+            [
+                'users'
+            ],
+            [
+                'country'
+            ],
+            'users',
+            $maxResults
+        );
+
+        return collect($response ?? [])->map(function (array $geoRow) {
+            return [
+                'country' => $geoRow[0],
+                'visitors' => $geoRow[1]
             ];
         });
 

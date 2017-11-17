@@ -56,7 +56,7 @@ class AnalyticsClient
      *
      * @return array|null
      */
-    public function performQuery(string $viewId, DateTime $startDate, DateTime $endDate, array $metrics, array $dimensions , string $sortByField = null, int $maxResults, array $others = [])
+    public function performQuery(string $viewId, DateTime $startDate, DateTime $endDate, array $metrics, array $dimensions , string $sortByField = null, $maxResults, array $others = [])
     {
         $cacheName = $this->determineCacheName(func_get_args());
 
@@ -93,6 +93,11 @@ class AnalyticsClient
         $request->setDateRanges($dateRange);
         $request->setDimensions($dimensionObjArr);
         $request->setMetrics($metricObjArr);
+        $request->setIncludeEmptyRows(true);
+
+        if($maxResults) {
+            $request->setPageSize($maxResults);
+        }
 
         if($sortByField){
         $ordering = new Google_Service_AnalyticsReporting_OrderBy();

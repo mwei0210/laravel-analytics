@@ -312,6 +312,27 @@ class Analytics
 
     }
 
+    public function fetchTrafficByDayHour(Period $period): Collection
+    {
+        $response = $this->performQuery(
+            $period,
+            ['users'],
+            ['dateHour']
+        );
+
+        $result = [];
+
+        foreach ($response as $key => $dateRow) {
+            $dateHour = Carbon::createFromFormat('YmdH', $dateRow[0]);
+            $result[$dateHour->format('l')][] = [
+                'hour' => $dateHour->format('H'),
+                'visitors' => (int) $dateRow[1]
+            ];
+        }
+
+        return collect($result);
+    }
+
     /*
      * Get the underlying Google_Service_Analytics object. You can use this
      * to basically call anything on the Google Analytics API.
